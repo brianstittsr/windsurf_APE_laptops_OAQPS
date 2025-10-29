@@ -6,6 +6,7 @@ SET CF_EXE=.\cf-cli-temp\cf.exe
 
 echo Logging in to cloud.gov...
 %CF_EXE% login -a api.fr.cloud.gov --sso
+%CF_EXE% target -o epa-prototyping -s admin-training
 
 echo Application uses localStorage for data persistence - no database service required.
 

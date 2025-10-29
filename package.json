@@ -15,6 +15,7 @@
     "node": "18.x"
   },
   "dependencies": {
+    "aws-sdk": "^2.1692.0",
     "cors": "^2.8.5",
     "csv-writer": "^1.6.0",
     "dotenv": "^16.3.1",

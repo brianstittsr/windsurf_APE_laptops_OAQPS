@@ -357,7 +357,7 @@ ${Object.entries(analytics.bySchema).map(([schema, data]) =>
 
   async testDataApi(api, keys) {
     try {
-      const response = await fetch('http://localhost:5001/api/chat/data-api/test', {
+      const response = await fetch('/api/chat/data-api/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

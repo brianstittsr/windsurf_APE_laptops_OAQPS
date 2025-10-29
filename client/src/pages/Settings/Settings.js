@@ -38,12 +38,12 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { useQuery, useMutation } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import toast from 'react-hot-toast';
 import aiService from '../../services/aiService';
-import localStorageService from '../../services/localStorageService';
 
 const Settings = () => {
+  const queryClient = useQueryClient();
   const [emailSettings, setEmailSettings] = useState({
     host: 'smtp.gmail.com',
     port: 587,
@@ -86,15 +86,32 @@ const Settings = () => {
     },
   });
 
-  // Fetch scheduled emails
-  const { data: scheduledEmails, refetch: refetchScheduled } = useQuery(
-    'scheduled-emails',
-    () => {
-      // Return mock scheduled emails from localStorage or empty array
-      const settings = localStorageService.getSettings();
-      return settings.scheduledEmails || [];
+  const { data: settings, isLoading: isLoadingSettings } = useQuery(
+    'app-settings',
+    async () => {
+      const response = await fetch('/api/settings');
+      if (!response.ok) {
+        // If settings don't exist, S3 might 404, which is okay.
+        if (response.status === 404) return {}; 
+        throw new Error('Failed to fetch settings');
+      }
+      return response.json();
+    },
+    {
+      onSuccess: (data) => {
+        if (data) {
+          setEmailSettings(data.emailSettings || { host: 'smtp.gmail.com', port: 587, user: '', password: '', enableNotifications: true });
+          setAiSettings(data.aiSettings || aiService.getSettings());
+          setAiKeys(data.aiKeys || []);
+          setDataApiKeys(data.dataApiKeys || { airnow: '', aqsEmail: '', aqsKey: '' });
+        }
+      },
+      // Keep data fresh but don't refetch too aggressively
+      staleTime: 1000 * 60 * 5, // 5 minutes
     }
   );
+
+  const scheduledEmails = settings?.scheduledEmails || [];
 
   // Test email mutation
   const testEmailMutation = useMutation(
@@ -116,28 +133,20 @@ const Settings = () => {
   // Create scheduled email mutation
   const createScheduledEmailMutation = useMutation(
     async (emailData) => {
-      // Save scheduled email to localStorage settings
-      const settings = localStorageService.getSettings();
-      const scheduledEmails = settings.scheduledEmails || [];
       const newEmail = {
         ...emailData,
         id: Date.now().toString(),
         createdAt: new Date().toISOString(),
         status: 'active'
       };
-      scheduledEmails.push(newEmail);
-      localStorageService.updateSettings({ ...settings, scheduledEmails });
+      const updatedEmails = [...(settings?.scheduledEmails || []), newEmail];
+      handleSaveAllSettings({ scheduledEmails: updatedEmails });
       return newEmail;
     },
     {
-      onSuccess: (newEmail) => {
-        toast.success('Scheduled email created successfully!');
+      onSuccess: () => {
         setScheduledEmailDialog(false);
-        refetchScheduled();
         resetScheduledEmailForm();
-      },
-      onError: () => {
-        toast.error('Failed to create scheduled email');
       },
     }
   );
@@ -145,21 +154,9 @@ const Settings = () => {
   // Delete scheduled email mutation
   const deleteScheduledEmailMutation = useMutation(
     async (emailId) => {
-      // Remove scheduled email from localStorage settings
-      const settings = localStorageService.getSettings();
-      const scheduledEmails = settings.scheduledEmails || [];
-      const updatedEmails = scheduledEmails.filter(email => email.id !== emailId);
-      localStorageService.updateSettings({ ...settings, scheduledEmails: updatedEmails });
+      const updatedEmails = (settings?.scheduledEmails || []).filter(email => email.id !== emailId);
+      handleSaveAllSettings({ scheduledEmails: updatedEmails });
       return emailId;
-    },
-    {
-      onSuccess: (emailId) => {
-        toast.success(`Scheduled email with id ${emailId} deleted successfully!`);
-        refetchScheduled();
-      },
-      onError: () => {
-        toast.error('Failed to delete scheduled email');
-      },
     }
   );
 
@@ -258,17 +255,36 @@ const Settings = () => {
     return modelsByProvider[provider] || modelsByProvider.openai;
   };
 
-  // AI Key Management Functions
-  React.useEffect(() => {
-    // Load keys from localStorage
-    const settings = localStorageService.getSettings();
-    if (settings.aiKeys) {
-      setAiKeys(settings.aiKeys);
+  const saveSettingsMutation = useMutation(
+    async (newSettings) => {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save settings');
+      }
+      return response.json();
+    },
+    {
+      onSuccess: () => {
+        toast.success('Settings saved successfully!');
+        queryClient.invalidateQueries('app-settings');
+      },
+      onError: (error) => {
+        toast.error(`Error: ${error.message}`);
+      },
     }
-    if (settings.dataApiKeys) {
-      setDataApiKeys(settings.dataApiKeys);
-    }
-  }, []);
+  );
+
+  const handleSaveAllSettings = (updatedSection) => {
+    const allSettings = {
+      ...settings,
+      ...updatedSection
+    };
+    saveSettingsMutation.mutate(allSettings);
+  };
 
   // Update model when provider changes
   React.useEffect(() => {
@@ -293,8 +309,7 @@ const Settings = () => {
   }, [newAiKey.provider]);
 
   const handleSaveAiSettings = () => {
-    aiService.updateSettings(aiSettings);
-    toast.success('AI settings saved successfully!');
+    handleSaveAllSettings({ aiSettings });
   };
 
   const handleAddAiKey = () => {
@@ -303,78 +318,26 @@ const Settings = () => {
       return;
     }
 
-    const keyWithId = {
-      ...newAiKey,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
+    const keyWithId = { ...newAiKey, id: Date.now().toString(), createdAt: new Date().toISOString() };
+    let updatedKeys = [...aiKeys, keyWithId];
 
-    const updatedKeys = [...aiKeys, keyWithId];
-    
-    // If this is the first key or marked as default, make it default
     if (updatedKeys.length === 1 || newAiKey.isDefault) {
-      updatedKeys.forEach(key => key.isDefault = false);
-      keyWithId.isDefault = true;
-      
-      // Update current AI settings to use this key
-      setAiSettings(prev => ({
-        ...prev,
-        provider: keyWithId.provider,
-        model: keyWithId.model,
-        apiKey: keyWithId.apiKey,
-        endpoint: keyWithId.endpoint
-      }));
+      updatedKeys = updatedKeys.map(k => ({ ...k, isDefault: k.id === keyWithId.id }));
     }
 
-    setAiKeys(updatedKeys);
-    
-    // Save to localStorage
-    const settings = localStorageService.getSettings();
-    settings.aiKeys = updatedKeys;
-    localStorageService.updateSettings(settings);
-
+    handleSaveAllSettings({ aiKeys: updatedKeys });
     setAiKeyDialog(false);
     resetAiKeyForm();
-    toast.success('AI key added successfully!');
   };
 
   const handleDeleteAiKey = (keyId) => {
     const updatedKeys = aiKeys.filter(key => key.id !== keyId);
-    setAiKeys(updatedKeys);
-    
-    // Save to localStorage
-    const settings = localStorageService.getSettings();
-    settings.aiKeys = updatedKeys;
-    localStorageService.updateSettings(settings);
-    
-    toast.success('AI key deleted successfully!');
+    handleSaveAllSettings({ aiKeys: updatedKeys });
   };
 
   const handleSetDefaultKey = (keyId) => {
-    const updatedKeys = aiKeys.map(key => ({
-      ...key,
-      isDefault: key.id === keyId
-    }));
-    
-    const defaultKey = updatedKeys.find(key => key.isDefault);
-    if (defaultKey) {
-      setAiSettings(prev => ({
-        ...prev,
-        provider: defaultKey.provider,
-        model: defaultKey.model,
-        apiKey: defaultKey.apiKey,
-        endpoint: defaultKey.endpoint
-      }));
-    }
-    
-    setAiKeys(updatedKeys);
-    
-    // Save to localStorage
-    const settings = localStorageService.getSettings();
-    settings.aiKeys = updatedKeys;
-    localStorageService.updateSettings(settings);
-    
-    toast.success('Default AI key updated!');
+    const updatedKeys = aiKeys.map(key => ({ ...key, isDefault: key.id === keyId }));
+    handleSaveAllSettings({ aiKeys: updatedKeys });
   };
 
   const handleTestAiConnection = async (key) => {
@@ -394,8 +357,7 @@ const Settings = () => {
   };
 
   const handleSaveDataApiKeys = () => {
-    localStorageService.updateSettings({ dataApiKeys });
-    toast.success('Data API keys saved successfully!');
+    handleSaveAllSettings({ dataApiKeys });
   };
 
   const handleTestDataApi = async (api) => {
@@ -426,26 +388,8 @@ const Settings = () => {
     });
   };
 
-  const handleRefreshFromDatafiles = () => {
-    try {
-      const refreshedInvoices = localStorageService.truncateAndRefreshData();
-      toast.success(`Data refreshed! Loaded ${refreshedInvoices.length} contracts from datafiles folder.`);
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-      toast.error('Failed to refresh data from datafiles');
-    }
-  };
-
-  const handleClearData = () => {
-    try {
-      localStorageService.clearAllData();
-      toast.success('All data cleared successfully!');
-    } catch (error) {
-      console.error('Error clearing data:', error);
-      toast.error('Failed to clear data');
-    }
-  };
-
+  
+  
   return (
     <Box>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
@@ -517,7 +461,7 @@ const Settings = () => {
                   <Button
                     variant="contained"
                     startIcon={<SaveIcon />}
-                    onClick={() => toast.success('Settings saved!')}
+                    onClick={() => handleSaveAllSettings({ emailSettings })}
                   >
                     Save Settings
                   </Button>
@@ -602,7 +546,7 @@ const Settings = () => {
                   <Button
                     variant="contained"
                     startIcon={<SaveIcon />}
-                    onClick={() => toast.success('AI settings saved!')}
+                    onClick={handleSaveAiSettings}
                   >
                     Save AI Settings
                   </Button>
@@ -612,52 +556,7 @@ const Settings = () => {
           </motion.div>
         </Grid>
 
-        {/* Data Management */}
-        <Grid item xs={12} md={6}>
-          <motion.div whileHover={{ scale: 1.01 }}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <StorageIcon sx={{ mr: 1 }} />
-                  <Typography variant="h6">Data Management</Typography>
-                </Box>
-                
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                  Manage your contract data and localStorage settings
-                </Typography>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<RefreshIcon />}
-                    onClick={handleRefreshFromDatafiles}
-                    fullWidth
-                  >
-                    Refresh from Datafiles
-                  </Button>
-                  <Typography variant="caption" color="textSecondary">
-                    Load fresh contract data from the 11 PDF files in the datafiles folder
-                  </Typography>
-                  
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={handleClearData}
-                    fullWidth
-                  >
-                    Clear All Data
-                  </Button>
-                  <Typography variant="caption" color="textSecondary">
-                    Remove all contracts, reports, and activity logs from localStorage
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </Grid>
-
+        
         {/* Data API Keys */}
         <Grid item xs={12} md={6}>
           <motion.div whileHover={{ scale: 1.01 }}>
