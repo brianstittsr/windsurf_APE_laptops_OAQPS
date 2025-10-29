@@ -129,7 +129,7 @@ ${invoices.slice(0, 3).map(inv =>
       }
 
       // Use backend proxy to avoid CORS issues
-      const response = await fetch('http://localhost:5001/api/chat/ai-proxy', {
+      const response = await fetch('/api/chat/ai-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -378,7 +378,7 @@ ${Object.entries(analytics.bySchema).map(([schema, data]) =>
 
   async testConnection(provider, apiKey, endpoint, model) {
     try {
-      const response = await fetch('http://localhost:5001/api/chat/ai-proxy/test', {
+      const response = await fetch('/api/chat/ai-proxy/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
