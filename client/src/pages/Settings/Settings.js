@@ -36,6 +36,8 @@ import {
   Notifications as NotificationsIcon,
   Storage as StorageIcon,
   Refresh as RefreshIcon,
+  Visibility, 
+  VisibilityOff 
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
@@ -70,6 +72,7 @@ const Settings = () => {
   // Data API Keys State
   const [dataApiKeys, setDataApiKeys] = useState({ airnow: '', aqsEmail: '', aqsKey: '' });
   const [testingDataApi, setTestingDataApi] = useState({ airnow: false, aqs: false });
+  const [showKeys, setShowKeys] = useState({ airnow: false, aqs: false });
   
   const [scheduledEmailDialog, setScheduledEmailDialog] = useState(false);
   const [newScheduledEmail, setNewScheduledEmail] = useState({
@@ -568,8 +571,16 @@ const Settings = () => {
                     <TextField
                       fullWidth
                       label="AirNow API Key"
+                      type={showKeys.airnow ? 'text' : 'password'}
                       value={dataApiKeys.airnow}
                       onChange={(e) => setDataApiKeys(prev => ({ ...prev, airnow: e.target.value }))}
+                      InputProps={{
+                        endAdornment: (
+                          <IconButton onClick={() => setShowKeys(prev => ({ ...prev, airnow: !prev.airnow }))} edge="end">
+                            {showKeys.airnow ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        ),
+                      }}
                     />
                   </Grid>
                   <Grid item xs={12}>
@@ -584,8 +595,16 @@ const Settings = () => {
                     <TextField
                       fullWidth
                       label="AQS API Key"
+                      type={showKeys.aqs ? 'text' : 'password'}
                       value={dataApiKeys.aqsKey}
                       onChange={(e) => setDataApiKeys(prev => ({ ...prev, aqsKey: e.target.value }))}
+                      InputProps={{
+                        endAdornment: (
+                          <IconButton onClick={() => setShowKeys(prev => ({ ...prev, aqs: !prev.aqs }))} edge="end">
+                            {showKeys.aqs ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        ),
+                      }}
                     />
                   </Grid>
                 </Grid>
