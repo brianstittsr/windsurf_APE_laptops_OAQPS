@@ -356,26 +356,6 @@ const Settings = () => {
     }
   };
 
-  const handleSaveDataApiKeys = () => {
-    handleSaveAllSettings({ dataApiKeys });
-  };
-
-  const handleTestDataApi = async (api) => {
-    setTestingDataApi(prev => ({ ...prev, [api]: true }));
-    try {
-      const result = await aiService.testDataApi(api, dataApiKeys);
-      if (result.success) {
-        toast.success(`${api.toUpperCase()} connection test successful!`);
-      } else {
-        toast.error(`${api.toUpperCase()} connection failed: ${result.error}`);
-      }
-    } catch (error) {
-      toast.error(`Connection test failed: ${error.message}`);
-    } finally {
-      setTestingDataApi(prev => ({ ...prev, [api]: false }));
-    }
-  };
-
   const resetAiKeyForm = () => {
     setNewAiKey({
       name: '',
@@ -388,8 +368,6 @@ const Settings = () => {
     });
   };
 
-  
-  
   return (
     <Box>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
@@ -550,52 +528,6 @@ const Settings = () => {
                   >
                     Save AI Settings
                   </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </Grid>
-
-        
-        {/* Data API Keys */}
-        <Grid item xs={12} md={6}>
-          <motion.div whileHover={{ scale: 1.01 }}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <StorageIcon sx={{ mr: 1 }} />
-                  <Typography variant="h6">Data API Keys</Typography>
-                </Box>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="AirNow API Key"
-                      value={dataApiKeys.airnow}
-                      onChange={(e) => setDataApiKeys(prev => ({ ...prev, airnow: e.target.value }))}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="AQS API User Email"
-                      value={dataApiKeys.aqsEmail}
-                      onChange={(e) => setDataApiKeys(prev => ({ ...prev, aqsEmail: e.target.value }))}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="AQS API Key"
-                      value={dataApiKeys.aqsKey}
-                      onChange={(e) => setDataApiKeys(prev => ({ ...prev, aqsKey: e.target.value }))}
-                    />
-                  </Grid>
-                </Grid>
-                <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-                  <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSaveDataApiKeys}>Save Keys</Button>
-                  <Button variant="outlined" startIcon={<TestIcon />} onClick={() => handleTestDataApi('airnow')} disabled={testingDataApi.airnow}>Test AirNow</Button>
-                  <Button variant="outlined" startIcon={<TestIcon />} onClick={() => handleTestDataApi('aqs')} disabled={testingDataApi.aqs}>Test AQS</Button>
                 </Box>
               </CardContent>
             </Card>
