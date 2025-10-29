@@ -22,10 +22,15 @@ app.use((req, res, next) => {
 });
 
 // Security middleware
-app.use(helmet());
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+    'connect-src': ["'self'", 'https://www.airnowapi.org'],
+  },
+}));
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://epa-invoice-analytics.app.cloud.gov', process.env.ALLOWED_ORIGINS || ''] 
+    ? ['https://epa-oid-analytics.app.cloud.gov', process.env.ALLOWED_ORIGINS || ''] 
     : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
   credentials: true
 }));
@@ -111,7 +116,7 @@ app.use('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 EPA Invoice Analytics Server running on port ${PORT}`);
+  console.log(`🚀 EPA OID Planning and Management Tool Server running on port ${PORT}`);
   console.log(`📊 Frontend should connect from http://localhost:3001`);
   console.log(`🔗 AI Proxy endpoint: http://localhost:${PORT}/api/chat/ai-proxy`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);

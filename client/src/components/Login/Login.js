@@ -144,7 +144,7 @@ const Login = () => {
             <LockOutlinedIcon />
           </Avatar>
           <Typography component="h1" variant="h5" sx={{ color: theme.palette.epa.blue.dark, fontWeight: 700 }} id="login-heading">
-            EPA Invoice Analytics Login
+            EPA OID Planning and Management Tool Login
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3, textAlign: 'center' }}>
             This is an official EPA system. Authorized users only.

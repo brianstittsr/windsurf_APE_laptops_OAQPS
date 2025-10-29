@@ -9,11 +9,8 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import Upload from './pages/Upload/Upload';
 import Invoices from './pages/Invoices/Invoices';
 import Analytics from './pages/Analytics/Analytics';
-import Chat from './pages/Chat/Chat';
 import Reports from './pages/Reports/Reports';
 import Settings from './pages/Settings/Settings';
-import FPDSSearch from './pages/FPDSSearch/FPDSSearch';
-import KaiglerAnalytics from './pages/KaiglerAnalytics/KaiglerAnalytics';
 import OIDDirector from './pages/OIDDirector/OIDDirector';
 import AirNowAqs from './pages/AirNowAqs/AirNowAqs';
 import Login from './components/Login/Login';
@@ -66,10 +63,7 @@ function App() {
                   <Route path="/upload" element={<Upload />} />
                   <Route path="/invoices" element={<Invoices />} />
                   <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/chat" element={<Chat />} />
                   <Route path="/reports" element={<Reports />} />
-                  <Route path="/fpds-search" element={<FPDSSearch />} />
-                  <Route path="/kaigler-analytics" element={<KaiglerAnalytics />} />
                   <Route path="/oid-director" element={<OIDDirector />} />
                   <Route path="/airnow-aqs" element={<AirNowAqs />} />
                   <Route path="/settings" element={<Settings />} />

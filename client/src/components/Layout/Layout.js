@@ -18,15 +18,12 @@ const drawerWidth = 240;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  { text: 'OID Director', icon: <SupervisorAccountIcon />, path: '/oid-director' },
+  { text: 'AIRNOW - AQS', icon: <WbSunnyIcon />, path: '/airnow-aqs' },
   { text: 'Upload Invoices', icon: <UploadIcon />, path: '/upload' },
   { text: 'Invoices', icon: <InvoicesIcon />, path: '/invoices' },
   { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-  { text: 'Chat Assistant', icon: <ChatIcon />, path: '/chat' },
   { text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
-  { text: 'FPDS Search', icon: <SearchIcon />, path: '/fpds-search' },
-  { text: 'Kaigler Analytics', icon: <InsightsIcon />, path: '/kaigler-analytics' },
-  { text: 'OID Director', icon: <SupervisorAccountIcon />, path: '/oid-director' },
-  { text: 'AIRNOW - AQS', icon: <WbSunnyIcon />, path: '/airnow-aqs' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];
 
@@ -85,7 +82,7 @@ const Layout = () => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            EPA Invoice Analytics
+            EPA OID Planning and Management Tool
           </Typography>
           <IconButton color="inherit">
             <Badge badgeContent={4} color="secondary">

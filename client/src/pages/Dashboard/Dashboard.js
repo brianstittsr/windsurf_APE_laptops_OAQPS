@@ -1,492 +1,182 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Grid,
   Card,
   CardContent,
   Typography,
-  Button,
-  LinearProgress,
-  Chip,
-  Avatar,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Divider,
-  IconButton,
-  Alert,
   useTheme,
+  LinearProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
 } from '@mui/material';
 import {
-  TrendingUp as TrendingUpIcon,
-  Description as InvoiceIcon,
-  AttachMoney as MoneyIcon,
-  Assessment as AnalyticsIcon,
-  Refresh as RefreshIcon,
-  ArrowForward as ArrowIcon,
-  CloudUpload as UploadIcon,
-  Chat as ChatIcon,
+  Thermostat as ThermostatIcon,
+  WbSunny as WbSunnyIcon,
+  LocationCity as LocationCityIcon,
+  BarChart as BarChartIcon,
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
 import { useQuery } from 'react-query';
-import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { queryAirnowApi, generateMockAirnowData } from '../../services/airnowService';
 import localStorageService from '../../services/localStorageService';
 
+const majorCities = [
+  { name: 'Washington, DC', zip: '20001' },
+  { name: 'New York, NY', zip: '10001' },
+  { name: 'Los Angeles, CA', zip: '90001' },
+  { name: 'Chicago, IL', zip: '60601' },
+  { name: 'Houston, TX', zip: '77001' },
+  { name: 'Phoenix, AZ', zip: '85001' },
+  { name: 'Philadelphia, PA', zip: '19019' },
+  { name: 'San Antonio, TX', zip: '78201' },
+  { name: 'San Diego, CA', zip: '92101' },
+  { name: 'Dallas, TX', zip: '75201' },
+  { name: 'San Jose, CA', zip: '95101' },
+  { name: 'Austin, TX', zip: '78701' },
+  { name: 'Jacksonville, FL', zip: '32201' },
+  { name: 'Fort Worth, TX', zip: '76101' },
+  { name: 'Columbus, OH', zip: '43201' },
+  { name: 'Charlotte, NC', zip: '28201' },
+  { name: 'San Francisco, CA', zip: '94101' },
+  { name: 'Indianapolis, IN', zip: '46201' },
+  { name: 'Seattle, WA', zip: '98101' },
+  { name: 'Denver, CO', zip: '80201' },
+];
+
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [greeting, setGreeting] = useState('');
   const theme = useTheme();
+  const [airnowApiKey, setAirnowApiKey] = useState(() => {
+    const settings = localStorageService.getSettings();
+    return settings.dataApiKeys?.airnow || '';
+  });
+  const [selectedCityZip, setSelectedCityZip] = useState(majorCities[0].zip); // Default to Raleigh
 
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Good Morning');
-    else if (hour < 18) setGreeting('Good Afternoon');
-    else setGreeting('Good Evening');
-  }, []);
-
-  // Fetch dashboard analytics from localStorage
-  const { data: analytics, isLoading, refetch } = useQuery(
-    'base-analytics',
-    () => {
-      return localStorageService.generateAnalytics();
-    },
+  const { data: cityData, isLoading, isError } = useQuery(
+    ['cityAqi', selectedCityZip, airnowApiKey],
+    () => queryAirnowApi(selectedCityZip, airnowApiKey),
     {
-      refetchInterval: 5000, // Refetch every 5 seconds for more responsive updates
-      refetchOnWindowFocus: true, // Refetch when window regains focus
+      enabled: !!airnowApiKey && !!selectedCityZip,
+      onError: (error) => {
+        toast.error(`AirNow API error: ${error.message}`);
+      },
+      initialData: () => {
+        if (!airnowApiKey) {
+          return generateMockAirnowData(selectedCityZip);
+        }
+        return undefined;
+      },
     }
   );
 
-  // Fetch recent invoices from localStorage
-  const { data: recentInvoices } = useQuery(
-    'recent-invoices',
-    () => {
-      const invoices = localStorageService.getInvoices();
-      // Sort by upload date and take the 5 most recent
-      return invoices
-        .sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate))
-        .slice(0, 5);
-    }
-  );
+  const getAqiColor = (aqi) => {
+    if (aqi <= 50) return theme.palette.success.main;
+    if (aqi <= 100) return theme.palette.warning.main;
+    if (aqi <= 150) return theme.palette.error.main;
+    return theme.palette.error.dark;
+  };
 
-  // Fetch activity summary from localStorage
-  const { data: activitySummary } = useQuery(
-    'activity-summary',
-    () => {
-      const logs = localStorageService.getActivityLogs(50);
-      const last7Days = new Date();
-      last7Days.setDate(last7Days.getDate() - 7);
-      
-      const recentLogs = logs.filter(log => 
-        new Date(log.timestamp) >= last7Days
-      );
-      
-      return {
-        totalActivities: recentLogs.length,
-        uploadsThisWeek: recentLogs.filter(log => 
-          log.action && log.action.toLowerCase().includes('upload')
-        ).length,
-        reportsGenerated: recentLogs.filter(log => 
-          log.action && log.action.toLowerCase().includes('report')
-        ).length,
-        recentActivities: recentLogs.slice(0, 5)
-      };
-    }
-  );
-
-  const StatCard = ({ title, value, subtitle, icon, color, trend, onClick }) => (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card 
-        sx={{ 
-          height: '100%', 
-          cursor: onClick ? 'pointer' : 'default',
-          background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
-          border: `1px solid ${color}20`,
-        }}
-        onClick={onClick}
-      >
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <Box>
-              <Typography color="textSecondary" gutterBottom variant="body2">
-                {title}
-              </Typography>
-              <Typography variant="h4" component="div" sx={{ fontWeight: 'bold', color }}>
-                {value}
-              </Typography>
-              {subtitle && (
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                  {subtitle}
-                </Typography>
-              )}
-              {trend && (
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                  <TrendingUpIcon sx={{ fontSize: 16, color: 'success.main', mr: 0.5 }} />
-                  <Typography variant="caption" color="success.main">
-                    {trend}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-            <Avatar sx={{ bgcolor: color, width: 56, height: 56 }}>
-              {icon}
-            </Avatar>
+  const StatCard = ({ title, value, icon, color }) => (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography color="textSecondary" gutterBottom variant="body2">
+              {title}
+            </Typography>
+            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+              {value}
+            </Typography>
           </Box>
-        </CardContent>
-      </Card>
-    </motion.div>
+          <Box sx={{ color }}>{icon}</Box>
+        </Box>
+      </CardContent>
+    </Card>
   );
 
-  const QuickActionCard = ({ title, description, icon, color, onClick }) => (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card 
-        sx={{ 
-          height: '100%', 
-          cursor: 'pointer',
-          '&:hover': {
-            boxShadow: 4,
-          }
-        }}
-        onClick={onClick}
-      >
-        <CardContent sx={{ textAlign: 'center', py: 3 }}>
-          <Avatar sx={{ bgcolor: color, width: 64, height: 64, mx: 'auto', mb: 2 }}>
-            {icon}
-          </Avatar>
-          <Typography variant="h6" gutterBottom>
-            {title}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            {description}
-          </Typography>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-
-  if (isLoading) {
-    return (
-      <Box>
-        <Typography variant="h4" gutterBottom>
-          Loading Dashboard...
-        </Typography>
-        <LinearProgress />
-      </Box>
-    );
-  }
+  const currentData = cityData?.[0] || {};
+  const aqi = currentData.AQI || 0;
+  const reportingArea = currentData.ReportingArea || 'N/A';
+  const primaryPollutant = currentData.ParameterName || 'N/A';
+  const aqiCategory = currentData.Category?.Name || 'N/A';
 
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', color: theme.palette.epa.blue.dark }}>
-              {greeting}, Contract Specialist
-            </Typography>
-            <Typography variant="body1" color="textSecondary">
-              Here's your invoice analytics overview
-            </Typography>
-          </Box>
-          <IconButton onClick={() => refetch()} color="primary" sx={{ bgcolor: theme.palette.epa.blue.lightest }}>
-            <RefreshIcon />
-          </IconButton>
-        </Box>
-        
-        {analytics?.totalInvoices === 0 && (
-          <Alert severity="info" sx={{ mb: 3 }}>
-            Welcome! Start by uploading your first invoice to see analytics and insights.
-          </Alert>
-        )}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 0 }}>
+          Air Quality Dashboard
+        </Typography>
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel>City</InputLabel>
+          <Select
+            value={selectedCityZip}
+            label="City"
+            onChange={(e) => setSelectedCityZip(e.target.value)}
+          >
+            {majorCities.map((city) => (
+              <MenuItem key={city.zip} value={city.zip}>
+                {city.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
+
+      {!airnowApiKey && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          The AirNow API key is not set. Data cannot be fetched. Please update the component state to include a valid API key.
+        </Alert>
+      )}
+
+      {isLoading && <LinearProgress sx={{ mb: 2 }} />}
+      {isError && airnowApiKey && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          An error occurred while fetching data. Please check the API key and network connection.
+        </Alert>
+      )}
 
       {/* Key Metrics */}
-      <Box sx={{ py: 3, px: 2, mb: 4, backgroundColor: theme.palette.epa.gray.lightest, borderRadius: 1 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Total Contracts"
-              value={analytics?.totalInvoices?.toLocaleString() || '0'}
-              subtitle="Processed documents"
-              icon={<InvoiceIcon />}
-              color="#1976d2"
-              trend="+12% this month"
-              onClick={() => navigate('/analytics')}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Total Value"
-              value={`$${analytics?.totalValue?.toLocaleString() || '0'}`}
-              subtitle="Contract amounts"
-              icon={<MoneyIcon />}
-              color="#2e8540"
-              trend="+8% this month"
-              onClick={() => navigate('/analytics')}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Average Value"
-              value={`$${analytics?.averageValue?.toLocaleString() || '0'}`}
-              subtitle="Per contract"
-              icon={<AnalyticsIcon />}
-              color="#ed6c02"
-              onClick={() => navigate('/analytics')}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Fiscal Years"
-              value={Object.keys(analytics?.byFiscalYear || {}).length}
-              subtitle="Years of data"
-              icon={<TrendingUpIcon />}
-              color="#9c27b0"
-              onClick={() => navigate('/analytics')}
-            />
-          </Grid>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard title="Current AQI" value={aqi} icon={<BarChartIcon fontSize="large" />} color={getAqiColor(aqi)} />
         </Grid>
-      </Box>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard title="Reporting Area" value={reportingArea} icon={<LocationCityIcon fontSize="large" />} color={theme.palette.primary.main} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard title="Primary Pollutant" value={primaryPollutant} icon={<WbSunnyIcon fontSize="large" />} color={theme.palette.info.main} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard title="AQI Category" value={aqiCategory} icon={<ThermostatIcon fontSize="large" />} color={getAqiColor(aqi)} />
+        </Grid>
+      </Grid>
 
-      {/* Contract Type Breakdown */}
-      <Box sx={{ mb: 4 }}>
-        <Card sx={{ border: `1px solid ${theme.palette.epa.gray.lighter}` }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-              Contract Type Breakdown
-            </Typography>
-            <Grid container spacing={3}>
-              {analytics?.byContractType && Object.entries(analytics.byContractType).map(([type, data]) => (
-                <Grid item xs={12} sm={4} key={type}>
-                  <motion.div whileHover={{ scale: 1.02 }}>
-                    <Card variant="outlined" sx={{ height: '100%', cursor: 'pointer' }} onClick={() => navigate('/analytics')}>
-                      <CardContent sx={{ textAlign: 'center' }}>
-                        <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold', mb: 1 }}>
-                          {data.count}
-                        </Typography>
-                        <Typography variant="h6" gutterBottom>
-                          {data.description}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                          ${data.value.toLocaleString()}
-                        </Typography>
-                        <Chip 
-                          label={`${((data.value / (analytics?.totalValue || 1)) * 100).toFixed(1)}% of total value`}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+      {/* Detailed Data View */}
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>Details for {reportingArea}</Typography>
+          {cityData && cityData.length > 0 ? (
+            <Grid container spacing={2}>
+              {cityData.map((pollutant, index) => (
+                <Grid item xs={12} sm={6} md={4} key={index}>
+                  <Box sx={{ p: 2, border: `1px solid ${getAqiColor(pollutant.AQI)}`, borderRadius: 1, textAlign: 'center' }}>
+                    <Typography variant="h6">{pollutant.ParameterName}</Typography>
+                    <Typography variant="h3" sx={{ color: getAqiColor(pollutant.AQI) }}>
+                      {pollutant.AQI}
+                    </Typography>
+                    <Typography variant="body2">{pollutant.Category.Name}</Typography>
+                  </Box>
                 </Grid>
               ))}
             </Grid>
-          </CardContent>
-        </Card>
-      </Box>
-
-      {/* Quick Actions */}
-      <Box sx={{ py: 3, px: 2, mb: 4, backgroundColor: theme.palette.epa.blue.lightest, borderRadius: 1 }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-          Quick Actions
-        </Typography>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={4}>
-            <QuickActionCard
-              title="Upload Invoice"
-              description="Upload and process new invoice documents"
-              icon={<UploadIcon />}
-              color="#1976d2"
-              onClick={() => navigate('/upload')}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <QuickActionCard
-              title="Chat Assistant"
-              description="Ask questions about your invoice data"
-              icon={<ChatIcon />}
-              color="#2e8540"
-              onClick={() => navigate('/chat')}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <QuickActionCard
-              title="Generate Report"
-              description="Create custom reports and analytics"
-              icon={<AnalyticsIcon />}
-              color="#ed6c02"
-              onClick={() => navigate('/reports')}
-            />
-          </Grid>
-        </Grid>
-      </Box>
-
-      {/* Recent Invoices and Activity Summary */}
-      <Box sx={{ mb: 4 }}>
-        <Grid container spacing={3}>
-          {/* Recent Invoices */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    Recent Invoices
-                  </Typography>
-                  <Button 
-                    endIcon={<ArrowIcon />}
-                    onClick={() => navigate('/analytics')}
-                    size="small"
-                  >
-                    View All
-                  </Button>
-                </Box>
-                
-                {recentInvoices && recentInvoices.length > 0 ? (
-                  <List>
-                    {recentInvoices.map((invoice, index) => (
-                      <React.Fragment key={invoice.id}>
-                        <ListItem alignItems="flex-start" sx={{ px: 0 }}>
-                          <ListItemAvatar>
-                            <Avatar sx={{ bgcolor: 'primary.main' }}>
-                              <InvoiceIcon />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primaryTypographyProps={{ component: 'div' }}
-                            secondaryTypographyProps={{ component: 'div' }}
-                            primary={
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="body1">
-                                  {invoice.contractNumber || invoice.invoiceNumber || `Invoice ${invoice.id.slice(-6)}`}
-                                </Typography>
-                                <Chip 
-                                  label={`FY${invoice.fiscalYear}`} 
-                                  size="small" 
-                                  color="primary" 
-                                />
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="body2" color="textSecondary">
-                                  ${invoice.totalAwardAmount?.toLocaleString() || '0'}
-                                </Typography>
-                                <Typography variant="caption" color="textSecondary">
-                                  {new Date(invoice.uploadDate).toLocaleDateString()}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        {index < recentInvoices.length - 1 && <Divider variant="inset" component="li" />}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                ) : (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <InvoiceIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                    <Typography variant="body2" color="textSecondary">
-                      No invoices uploaded yet
-                    </Typography>
-                    <Button 
-                      variant="outlined" 
-                      sx={{ mt: 2 }}
-                      onClick={() => navigate('/upload')}
-                    >
-                      Upload First Invoice
-                    </Button>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Activity Summary */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    Recent Activity
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Last 7 days
-                  </Typography>
-                </Box>
-                
-                {activitySummary ? (
-                  <Box>
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold' }}>
-                        {activitySummary.totalActivities}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Total activities
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Activity Breakdown
-                      </Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography variant="body2">
-                          Data Uploads
-                        </Typography>
-                        <Typography variant="body2" color="primary">
-                          {activitySummary.uploadsThisWeek}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography variant="body2">
-                          Reports Generated
-                        </Typography>
-                        <Typography variant="body2" color="primary">
-                          {activitySummary.reportsGenerated}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    {activitySummary.recentActivities && activitySummary.recentActivities.length > 0 && (
-                      <Box>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Latest Activities
-                        </Typography>
-                        {activitySummary.recentActivities.slice(0, 3).map((activity, index) => (
-                          <Box key={index} sx={{ mb: 1 }}>
-                            <Typography variant="body2">
-                              {activity.action || activity.description || 'System Activity'}
-                            </Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {new Date(activity.timestamp).toLocaleString()}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    )}
-                  </Box>
-                ) : (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <AnalyticsIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                    <Typography variant="body2" color="textSecondary">
-                      No recent activity
-                    </Typography>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
+          ) : (
+            <Typography>No data available for the selected city.</Typography>
+          )}
+        </CardContent>
+      </Card>
     </Box>
   );
 };

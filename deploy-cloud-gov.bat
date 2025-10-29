@@ -1,5 +1,5 @@
 @echo off
-echo ===== EPA Invoice Analytics Cloud.gov Deployment =====
+echo ===== EPA OID Planning and Management Tool Cloud.gov Deployment =====
 
 REM Set path to local CF executable
 SET CF_EXE=.\cf-cli-temp\cf.exe
@@ -19,10 +19,10 @@ echo Building client application locally...
 call .\build-client.bat
 
 echo Checking if application already exists...
-%CF_EXE% app epa-invoice-analytics > nul 2>&1
+%CF_EXE% app epa-oid-analytics > nul 2>&1
 if not errorlevel 1 (
   echo Deleting existing application...
-  %CF_EXE% delete -f epa-invoice-analytics
+  %CF_EXE% delete -f epa-oid-analytics
   echo Waiting for deletion to complete...
   timeout /t 5 /nobreak > nul
 )
@@ -31,12 +31,12 @@ echo Deploying application to cloud.gov...
 %CF_EXE% push
 
 echo Setting environment variables...
-%CF_EXE% set-env epa-invoice-analytics NODE_ENV production
+%CF_EXE% set-env epa-oid-analytics NODE_ENV production
 
 echo Restarting application...
-%CF_EXE% restart epa-invoice-analytics
+%CF_EXE% restart epa-oid-analytics
 
 echo Deployment complete! Your application should be available at:
-echo https://epa-invoice-analytics.app.cloud.gov
+echo https://epa-oid-analytics.app.cloud.gov
 
-echo To view logs, run: %CF_EXE% logs epa-invoice-analytics --recent
+echo To view logs, run: %CF_EXE% logs epa-oid-analytics --recent

@@ -184,7 +184,7 @@ const EPAHeader = () => {
       <Box sx={{ bgcolor: theme.palette.epa.gray.lightest, py: 2 }}>
         <Container maxWidth="lg">
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: theme.palette.epa.blue.dark }}>
-            EPA Invoice Analytics
+            EPA OID Planning and Management Tool
           </Typography>
         </Container>
       </Box>

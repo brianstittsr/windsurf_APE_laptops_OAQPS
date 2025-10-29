@@ -1,6 +1,6 @@
-# Deploying EPA Invoice Analytics to cloud.gov
+# Deploying EPA OID Planning and Management Tool to cloud.gov
 
-This guide provides step-by-step instructions for deploying the EPA Invoice Analytics application to cloud.gov using the cloud.gov CLI.
+This guide provides step-by-step instructions for deploying the EPA OID Planning and Management Tool application to cloud.gov using the cloud.gov CLI.
 
 ## Prerequisites
 

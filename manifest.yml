@@ -1,6 +1,6 @@
 ---
 applications:
-- name: epa-invoice-analytics
+- name: epa-oid-analytics
   memory: 1G
   disk_quota: 2G
   instances: 1
@@ -9,4 +9,4 @@ applications:
   env:
     NODE_ENV: production
   routes:
-    - route: epa-invoice-analytics.app.cloud.gov
+    - route: epa-oid-analytics.app.cloud.gov

@@ -1,5 +1,5 @@
 @echo off
-echo ===== Building EPA Invoice Analytics Client =====
+echo ===== Building EPA OID Planning and Management Tool Client =====
 
 echo Installing client dependencies...
 cd client

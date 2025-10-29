@@ -55,9 +55,12 @@ const AirNowAqs = () => {
 
   return (
     <Container maxWidth="xl">
-      <Typography variant="h4" gutterBottom>
-        AIRNOW - AQS Assistant
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <img src="https://www.airnow.gov/sites/default/files/2021-10/airnow-logo-2021.png" alt="AirNow Logo" style={{ height: '50px', marginRight: '16px' }} />
+        <Typography variant="h4" gutterBottom>
+          AIRNOW - AQS Assistant
+        </Typography>
+      </Box>
       <Typography variant="subtitle1" gutterBottom>
         Ask questions about air quality data from AIRNOW and AQS.
       </Typography>
