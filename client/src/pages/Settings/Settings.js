@@ -340,6 +340,26 @@ const Settings = () => {
     handleSaveAllSettings({ aiKeys: updatedKeys });
   };
 
+  const handleSaveDataApiKeys = () => {
+    handleSaveAllSettings({ dataApiKeys });
+  };
+
+  const handleTestDataApi = async (api) => {
+    setTestingDataApi(prev => ({ ...prev, [api]: true }));
+    try {
+      const result = await aiService.testDataApi(api, dataApiKeys);
+      if (result.success) {
+        toast.success(`${api.toUpperCase()} connection test successful!`);
+      } else {
+        toast.error(`${api.toUpperCase()} connection failed: ${result.error}`);
+      }
+    } catch (error) {
+      toast.error(`Connection test failed: ${error.message}`);
+    } finally {
+      setTestingDataApi(prev => ({ ...prev, [api]: false }));
+    }
+  };
+
   const handleTestAiConnection = async (key) => {
     setTestingConnection(true);
     try {
