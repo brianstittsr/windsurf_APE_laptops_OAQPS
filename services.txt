@@ -1,0 +1,11 @@
+Getting service instances in org epa-prototyping / space admin-training as Stitt.Brian@epa.gov...
+
+name                 offering                    plan             bound apps                                     last operation     broker                   upgrade available
+log-drain            user-provided                                nexusweb, nexusweb-test, water10, water10api                                               
+methane-s3           s3                          basic-public                                                    delete failed      s3-broker                no
+my-service-account   cloud-gov-service-account   space-deployer                                                  create succeeded   uaa-credentials-broker   no
+n8n-postgres         aws-rds                     small-psql       n8n                                            create succeeded   aws-broker               no
+n8n-s3-bucket        s3                          basic-public                                                    create succeeded   s3-broker                no
+test                 s3                          basic                                                           create succeeded   s3-broker                no
+testmysql            aws-rds                     small-mysql      water10api                                     update succeeded   aws-broker               no
+Water10Test          aws-rds                     small-mysql                                                     create succeeded   aws-broker               no
