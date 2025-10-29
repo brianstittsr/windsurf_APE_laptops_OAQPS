@@ -12,6 +12,7 @@ const chatRoutes = require('./routes/chat');
 const reportRoutes = require('./routes/reports');
 const emailRoutes = require('./routes/email');
 const settingsRoutes = require('./routes/settings');
+const logRoutes = require('./routes/logs');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -70,6 +71,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/logs', logRoutes);
 
 // Serve PDF files from datafiles folder
 app.get('/api/pdfs/:filename', (req, res) => {
