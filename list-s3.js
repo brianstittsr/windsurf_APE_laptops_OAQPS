@@ -3,7 +3,7 @@ const { execSync } = require('child_process');
 
 const getS3Client = () => {
   try {
-    const vcapServices = execSync('.\\cf-cli-temp\\cf.exe env epa-oid-analytics | findstr VCAP_SERVICES').toString();
+    const vcapServices = execSync('.\\cf-cli-temp\\cf.exe env epa-oid-analytics --organization epa-prototyping --space admin-training | findstr VCAP_SERVICES').toString();
     const vcapJson = vcapServices.substring(vcapServices.indexOf('{'));
     const vcap = JSON.parse(vcapJson);
     const s3Credentials = vcap.VCAP_SERVICES.s3[0].credentials;
@@ -24,7 +24,7 @@ const listFiles = async () => {
   const s3 = getS3Client();
   if (!s3) return;
 
-  const bucketName = JSON.parse(execSync('.\\cf-cli-temp\\cf.exe env epa-oid-analytics | findstr VCAP_SERVICES').toString().substring(execSync('.\\cf-cli-temp\\cf.exe env epa-oid-analytics | findstr VCAP_SERVICES').toString().indexOf('{'))).VCAP_SERVICES.s3[0].credentials.bucket;
+  const bucketName = JSON.parse(execSync('.\\cf-cli-temp\\cf.exe env epa-oid-analytics --organization epa-prototyping --space admin-training | findstr VCAP_SERVICES').toString().substring(execSync('.\\cf-cli-temp\\cf.exe env epa-oid-analytics --organization epa-prototyping --space admin-training | findstr VCAP_SERVICES').toString().indexOf('{'))).VCAP_SERVICES.s3[0].credentials.bucket;
 
   const params = {
     Bucket: bucketName,
