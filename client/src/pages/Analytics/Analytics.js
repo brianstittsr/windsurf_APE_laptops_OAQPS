@@ -27,7 +27,6 @@ import {
 } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import { queryAirnowApi } from '../../services/airnowService';
-import localStorageService from '../../services/localStorageService';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement
@@ -60,10 +59,16 @@ const majorCities = [
 const Analytics = () => {
   const theme = useTheme();
   const [selectedCityZip, setSelectedCityZip] = useState(majorCities[0].zip);
-  const [airnowApiKey, setAirnowApiKey] = useState(() => {
-    const settings = localStorageService.getSettings();
-    return settings.dataApiKeys?.airnow || '';
+  const { data: settings } = useQuery('app-settings', async () => {
+    const response = await fetch('/api/settings');
+    if (!response.ok) {
+      if (response.status === 404) return {}; 
+      throw new Error('Failed to fetch settings');
+    }
+    return response.json();
   });
+
+  const airnowApiKey = settings?.dataApiKeys?.airnow || '';
 
   // Fetch data for all major cities
   const { data: citiesData, isLoading: isLoadingCities } = useQuery(

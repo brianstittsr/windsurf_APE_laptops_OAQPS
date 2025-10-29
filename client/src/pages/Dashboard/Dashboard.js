@@ -22,7 +22,6 @@ import {
 import { useQuery } from 'react-query';
 import toast from 'react-hot-toast';
 import { queryAirnowApi, generateMockAirnowData } from '../../services/airnowService';
-import localStorageService from '../../services/localStorageService';
 
 const majorCities = [
   { name: 'Washington, DC', zip: '20001' },
@@ -49,10 +48,16 @@ const majorCities = [
 
 const Dashboard = () => {
   const theme = useTheme();
-  const [airnowApiKey, setAirnowApiKey] = useState(() => {
-    const settings = localStorageService.getSettings();
-    return settings.dataApiKeys?.airnow || '';
+  const { data: settings } = useQuery('app-settings', async () => {
+    const response = await fetch('/api/settings');
+    if (!response.ok) {
+      if (response.status === 404) return {}; 
+      throw new Error('Failed to fetch settings');
+    }
+    return response.json();
   });
+
+  const airnowApiKey = settings?.dataApiKeys?.airnow || '';
   const [selectedCityZip, setSelectedCityZip] = useState(majorCities[0].zip); // Default to Raleigh
 
   const { data: cityData, isLoading, isError } = useQuery(

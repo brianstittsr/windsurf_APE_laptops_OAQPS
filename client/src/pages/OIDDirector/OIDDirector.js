@@ -7,6 +7,7 @@ import TaskManager from './components/TaskManager';
 import IdeaStarters from './components/IdeaStarters';
 import BrainstormingCommands from './components/BrainstormingCommands';
 import ReportGenerator from './components/ReportGenerator';
+import { useQuery } from 'react-query';
 import { queryAqsApi } from '../../services/aqsService';
 import { queryAirnowApi } from '../../services/airnowService';
 import aiService from '../../services/aiService';
@@ -14,7 +15,16 @@ import aiService from '../../services/aiService';
 const OIDDirector = () => {
   const [messages, setMessages] = useState([]);
   const [reports, setReports] = useState([]);
-  const [airnowApiKey] = useState(''); // TODO: Securely store and retrieve API key
+  const { data: settings } = useQuery('app-settings', async () => {
+    const response = await fetch('/api/settings');
+    if (!response.ok) {
+      if (response.status === 404) return {}; 
+      throw new Error('Failed to fetch settings');
+    }
+    return response.json();
+  });
+
+  const airnowApiKey = settings?.dataApiKeys?.airnow || '';
 
   const saveChatLog = async (chatMessages) => {
     try {

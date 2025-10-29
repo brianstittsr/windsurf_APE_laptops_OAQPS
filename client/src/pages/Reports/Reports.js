@@ -26,7 +26,6 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { queryAirnowApi } from '../../services/airnowService';
-import localStorageService from '../../services/localStorageService';
 
 const majorCities = [
   { name: 'Raleigh, NC', zip: '27601' },
@@ -38,10 +37,16 @@ const majorCities = [
 ];
 
 const Reports = () => {
-  const [airnowApiKey, setAirnowApiKey] = useState(() => {
-    const settings = localStorageService.getSettings();
-    return settings.dataApiKeys?.airnow || '';
+  const { data: settings } = useQuery('app-settings', async () => {
+    const response = await fetch('/api/settings');
+    if (!response.ok) {
+      if (response.status === 404) return {}; 
+      throw new Error('Failed to fetch settings');
+    }
+    return response.json();
   });
+
+  const airnowApiKey = settings?.dataApiKeys?.airnow || '';
   const [reports, setReports] = useState([]);
 
   const { data: citiesData, isLoading: isLoadingCities } = useQuery(
